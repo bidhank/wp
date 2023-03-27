@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Form</title>
+
+</head>
+<style>
+    table, th, td {
+        border: 1px solid;
+    }
+</style>
+<body>
+<h1>Contact Form</h1>
+<form method="post" id="contactForm">
+    <label for="fullName">Full Name:</label>
+    <input type="text" id="fullName" name="fullName" required><br>
+    <label for="emailAddress">Email Address:</label>
+    <input type="email" id="emailAddress" name="emailAddress" required><br>
+    <label for="mobileNumber">Mobile Number:</label>
+    <input type="tel" id="mobileNumber" name="mobileNumber" required><br>
+    <button type="submit">Submit</button>
+</form>
+<p id="message" ></p>
+
+<hr>
+<h1>Search Contact</h1>
+<form id="searchForm" method="post">
+    <label for="fullName">Full Name:</label>
+    <input type="text" id="searchFullName" name="fullName" required><br>
+    <button type="submit">Submit</button>
+</form>
+<p id="searchMessage" ></p>
+<table style="border: navy">
+    <th>
+      Id
+    </th>  <th>
+        Name
+    </th>
+    <th>
+        Email Address
+    </th>
+    <th>
+        Mobile Number
+    </th>
+
+    <tr>
+        <td id="dataId"></td>
+        <td id="dataName"></td>
+        <td id="dataEmail"></td>
+        <td id="dataMobile"></td>
+
+
+    </tr>
+</table>
+
+
+<h1>Contact List</h1>
+<table style="border: navy" id="seeMoreTable">
+    <th>
+        Name
+    </th>
+    <th>
+        Email Address
+    </th>
+    <th>
+        Mobile Number
+    </th>
+
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+
+    </tr>
+</table>
+<button id="seeMore">Browse Contacts</button>
+</body>
+</html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+<script>
+
+    $(document).ready(function() {
+
+
+
+
+        $('#contactForm').submit(function(event) {
+            $('#message').text('')
+
+            event.preventDefault();
+
+
+            let formData = {
+                fullName: $('#fullName').val(),
+                emailAddress: $('#emailAddress').val(),
+                mobileNumber: $('#mobileNumber').val()
+            };
+
+            console.log( JSON.stringify(formData))
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/v1/contacts',
+                data:  JSON.stringify(formData),
+                contentType: "application/json",
+                success: function(data) {
+                    $('#message').text('Contact added successfully');
+                    $('#fullName').val('');
+                    $('#emailAddress').val('');
+                    $('#mobileNumber').val('');
+                },
+                error: function(xhr, status, error) {
+                    if (xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.length > 0) {
+                        let errorMessage = xhr.responseJSON.errors[0];
+                        $('#message').text('Failed to add contact: ' + errorMessage);
+                    } else {
+                        $('#message').text('Failed to add contact: ' + error);
+                    }
+                }
+            });
+        });
+
+
+
+        $('#searchForm').submit(function(event) {
+
+            $('#searchMessage').text('');
+
+            event.preventDefault();
+
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/v1/contacts/search',
+                data: { name:  $('#searchFullName').val() },
+                success: function(data) {
+                    $('#dataId').html(data.id);
+                    $('#dataName').html(data.fullName);
+                    $('#dataEmail').html(data.emailAddress);
+                    $('#dataMobile').html(data.mobileNumber);
+                },
+                error: function(xhr, status, error) {
+                        $('#searchMessage').text('Contact does not exist: Add new contact');
+
+                }
+            });
+        });
+
+        let pageNo=0;
+
+
+        $('#seeMore').click(function(event) {
+
+            console.log("PageNo:"+pageNo)
+
+            $('#searchMessage').text('');
+
+            event.preventDefault();
+
+
+            $.ajax({
+                url: "/api/v1/contacts?pageNo="+pageNo,
+                type: "GET",
+                success: function(data) {
+                    $.each(data.content, function(index, element) {
+                        let row = $("<tr><td>" + element.fullName + "</td><td>" + element.emailAddress + "</td><td>" + element.mobileNumber + "</td></tr>");
+                        $("#seeMoreTable").append(row);
+                    });
+                    $("#seeMore").text("See More ...")
+                },
+                error: function() {
+                    console.log("Error fetching data.");
+                }
+            });
+            pageNo++;
+        });
+
+
+
+
+
+
+    });
+
+
+</script>
